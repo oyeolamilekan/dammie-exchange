@@ -1,0 +1,1 @@
+ALTER TABLE "deposits" ADD COLUMN "network" varchar(64);

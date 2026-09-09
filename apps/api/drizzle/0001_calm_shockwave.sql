@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "intents_telegram_id_unique" ON "intents" USING btree ("telegram_id");

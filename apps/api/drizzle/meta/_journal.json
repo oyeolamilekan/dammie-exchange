@@ -1,0 +1,139 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1787992180933,
+      "tag": "0000_noisy_magik",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1787993046380,
+      "tag": "0001_calm_shockwave",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787994988213,
+      "tag": "0002_shocking_quicksilver",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787995283520,
+      "tag": "0003_redundant_squirrel_girl",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787996000000,
+      "tag": "0004_account_versions",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788046366225,
+      "tag": "0005_chat_history",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788611303719,
+      "tag": "0006_unique_human_fly",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788639161418,
+      "tag": "0007_plain_genesis",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788690162095,
+      "tag": "0008_complex_wonder_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788697916009,
+      "tag": "0009_open_captain_america",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788701127127,
+      "tag": "0010_equal_starjammers",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788701368559,
+      "tag": "0011_silent_klaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1788705583966,
+      "tag": "0012_broken_gunslinger",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1788707221486,
+      "tag": "0013_magenta_toad",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788709775187,
+      "tag": "0014_clammy_stranger",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1788713248114,
+      "tag": "0015_omniscient_sandman",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1788723236774,
+      "tag": "0016_whole_tony_stark",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1788806097782,
+      "tag": "0017_icy_master_chief",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1788858075763,
+      "tag": "0018_early_starjammers",
+      "breakpoints": true
+    }
+  ]
+}

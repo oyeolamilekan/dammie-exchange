@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Environment files (examples are committed)
+**/.env*
+!**/.env.example
+
+# Build and test output
+apps/api/dist/
+apps/web/.next/
+apps/web/out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Logs and local tooling
+logs/
+*.log
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Deployment state and local credentials
+.vercel/
+*.pem
+
+# OS files
+.DS_Store

@@ -1,0 +1,30 @@
+{
+  "name": "dammie-ai",
+  "private": true,
+  "license": "MIT",
+  "packageManager": "bun@1.3.10",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "bun run --parallel --workspaces dev",
+    "build": "bun run --parallel --workspaces --if-present build",
+    "lint": "bun run --parallel --workspaces --if-present lint",
+    "typecheck": "bun run --parallel --workspaces --if-present typecheck",
+    "test": "bun run --parallel --workspaces --if-present test",
+    "check": "bun run lint && bun run typecheck && bun run test && bun run build",
+    "admin:create": "bun run --cwd apps/api admin:create",
+    "db:migrate": "bun run --cwd apps/api db:migrate",
+    "setup": "bun run --cwd apps/api setup",
+    "reconcile:withdrawals": "bun run --cwd apps/api reconcile:withdrawals"
+  },
+  "overrides": {
+    "@types/express-serve-static-core": "5.0.7",
+    "lodash": "4.18.1",
+    "path-to-regexp": "8.4.2",
+    "qs": "6.15.3"
+  }
+}
