@@ -31,6 +31,55 @@ interface ConversationTurn {
   turnId: string;
 }
 
+const TYPING_REFRESH_INTERVAL_MS = 4_000;
+
+/** Maintains one best-effort Telegram progress signal for an AI turn. */
+class TelegramResponseProgress {
+  private timer?: ReturnType<typeof setTimeout>;
+  private refreshPromise: Promise<void> = Promise.resolve();
+  private stopped = false;
+
+  constructor(
+    private readonly bot: TelegramClient,
+    private readonly chatId: number,
+  ) {}
+
+  async start(): Promise<void> {
+    await this.refresh();
+    this.scheduleRefresh();
+  }
+
+  async stop(): Promise<void> {
+    this.stopped = true;
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = undefined;
+    }
+    await this.refreshPromise;
+  }
+
+  private scheduleRefresh(): void {
+    if (this.stopped) return;
+
+    this.timer = setTimeout(() => {
+      this.timer = undefined;
+      const refreshPromise = this.refresh();
+      this.refreshPromise = refreshPromise;
+      void refreshPromise.then(() => this.scheduleRefresh());
+    }, TYPING_REFRESH_INTERVAL_MS);
+  }
+
+  private async refresh(): Promise<void> {
+    if (this.stopped) return;
+
+    try {
+      await this.bot.sendChatAction(this.chatId, 'typing');
+    } catch (error) {
+      Logging.warning('Telegram typing progress failed', error);
+    }
+  }
+}
+
 /**
  * @class DammieCryptoBot
  * @description Implements a Telegram bot for cryptocurrency transactions and information,
@@ -219,29 +268,35 @@ export class DammieCryptoBot {
     conversation: ConversationTurn,
     claimedMessage: { id: string; createdAt: Date },
   ): Promise<void> {
-    await this.bot.sendChatAction(chatId, "typing");
+    const progress = new TelegramResponseProgress(this.bot, chatId);
+    await progress.start();
 
-    const recentMessages = await this.history.getRecentMessagesBefore({
-      intentId: conversation.intentId,
-      before: claimedMessage,
-      limit: MODEL_CONTEXT_MESSAGE_LIMIT,
-    });
-    const [supportedCryptos, registeredUser] = await Promise.all([
-      findSupportedCryptos(),
-      getUserByIntentId(conversation.intentId),
-    ]);
-    const prompt = SYSTEM_PROMPT({
-      userId,
-      supportedCryptos,
-      recentMessages,
-      isRegistered: Boolean(registeredUser?.firstName),
-    });
-    const aiResponse = await runCryptoAgent({
-      prompt: text,
-      instructions: prompt,
-      userId,
-      username,
-    }, { supportedCryptos });
+    let aiResponse: CryptoAgentResponse;
+    try {
+      const recentMessages = await this.history.getRecentMessagesBefore({
+        intentId: conversation.intentId,
+        before: claimedMessage,
+        limit: MODEL_CONTEXT_MESSAGE_LIMIT,
+      });
+      const [supportedCryptos, registeredUser] = await Promise.all([
+        findSupportedCryptos(),
+        getUserByIntentId(conversation.intentId),
+      ]);
+      const prompt = SYSTEM_PROMPT({
+        userId,
+        supportedCryptos,
+        recentMessages,
+        isRegistered: Boolean(registeredUser?.firstName),
+      });
+      aiResponse = await runCryptoAgent({
+        prompt: text,
+        instructions: prompt,
+        userId,
+        username,
+      }, { supportedCryptos });
+    } finally {
+      await progress.stop();
+    }
 
     await this.sendAIResponse(chatId, aiResponse, conversation);
   }

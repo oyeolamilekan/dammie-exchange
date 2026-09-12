@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   TelegramClient,
   TelegramMessage,
@@ -35,6 +35,17 @@ vi.mock('../../src/helpers/prompt', () => ({
 
 import { DammieCryptoBot } from '../../src/plugins/telegram';
 import { MESSAGES } from '../../src/helpers/messages';
+import Logging from '../../src/library/logging.utils';
+
+const deferred = <T>() => {
+  let resolve!: (value: T) => void;
+  let reject!: (error: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+};
 
 const createClient = () => {
   let handler: ((message: TelegramMessage) => Promise<void>) | undefined;
@@ -86,6 +97,10 @@ describe('DammieCryptoBot behavior', () => {
     });
     mocks.appendAssistantMessage.mockResolvedValue({ id: 'assistant-id' });
     mocks.getRecentMessagesBefore.mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('preserves the /start Mini App signup button', async () => {
@@ -142,7 +157,7 @@ describe('DammieCryptoBot behavior', () => {
     );
   });
 
-  it('preserves typing actions and typed web-app responses', async () => {
+  it('starts the typing indicator and preserves typed web-app responses', async () => {
     mocks.runCryptoAgent.mockResolvedValue({
       text: 'Approve this swap',
       action: { kind: 'web_app', name: 'APPROVE_TRANSACTION', param: 'swap-id' },
@@ -176,6 +191,76 @@ describe('DammieCryptoBot behavior', () => {
       turnId: userWrite.turnId,
       content: 'Approve this swap',
     });
+    expect(vi.mocked(fake.client.sendChatAction).mock.invocationCallOrder[0])
+      .toBeLessThan(mocks.getRecentMessagesBefore.mock.invocationCallOrder[0]);
+  });
+
+  it('refreshes typing every four seconds and waits for an in-flight refresh before delivery', async () => {
+    vi.useFakeTimers();
+    const agentResponse = deferred<{ text: string }>();
+    const typingRefresh = deferred<void>();
+    mocks.runCryptoAgent.mockReturnValue(agentResponse.promise);
+    const fake = createClient();
+    vi.mocked(fake.client.sendChatAction)
+      .mockResolvedValueOnce(undefined)
+      .mockReturnValueOnce(typingRefresh.promise);
+    createBot(fake.client);
+
+    const handling = fake.getHandler()(message('take your time'));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(fake.client.sendChatAction).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(4_000);
+    expect(fake.client.sendChatAction).toHaveBeenCalledTimes(2);
+
+    agentResponse.resolve({ text: 'Finished response' });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fake.client.sendMessage).not.toHaveBeenCalled();
+
+    typingRefresh.resolve();
+    await handling;
+    expect(fake.client.sendMessage).toHaveBeenCalledWith(
+      42,
+      'Finished response',
+      expect.any(Object),
+    );
+
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(fake.client.sendChatAction).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps typing progress failures non-fatal', async () => {
+    vi.useFakeTimers();
+    const warning = vi.spyOn(Logging, 'warning').mockImplementation(() => undefined);
+    const agentResponse = deferred<{ text: string }>();
+    mocks.runCryptoAgent.mockReturnValue(agentResponse.promise);
+    const fake = createClient();
+    vi.mocked(fake.client.sendChatAction).mockRejectedValueOnce(
+      new Error('typing unavailable'),
+    ).mockResolvedValue(undefined);
+    createBot(fake.client);
+
+    const handling = fake.getHandler()(message('hello'));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(fake.client.sendChatAction).toHaveBeenCalledTimes(1);
+    expect(warning).toHaveBeenCalledWith(
+      'Telegram typing progress failed',
+      expect.any(Error),
+    );
+
+    await vi.advanceTimersByTimeAsync(4_000);
+    expect(fake.client.sendChatAction).toHaveBeenCalledTimes(2);
+
+    agentResponse.resolve({ text: 'Hello back' });
+    await handling;
+    await vi.advanceTimersByTimeAsync(12_000);
+    expect(fake.client.sendChatAction).toHaveBeenCalledTimes(2);
+    expect(fake.client.sendMessage).toHaveBeenCalledWith(
+      42,
+      'Hello back',
+      expect.any(Object),
+    );
   });
 
   it('injects the previous 20 messages into the model instructions', async () => {
@@ -272,11 +357,25 @@ describe('DammieCryptoBot behavior', () => {
   });
 
   it('stores the user-visible error when agent processing fails', async () => {
-    mocks.runCryptoAgent.mockRejectedValueOnce(new Error('model unavailable'));
+    vi.useFakeTimers();
+    const agentResponse = deferred<{ text: string }>();
+    const typingRefresh = deferred<void>();
+    mocks.runCryptoAgent.mockReturnValue(agentResponse.promise);
     const fake = createClient();
+    vi.mocked(fake.client.sendChatAction)
+      .mockResolvedValueOnce(undefined)
+      .mockReturnValueOnce(typingRefresh.promise);
     createBot(fake.client);
 
-    await fake.getHandler()(message('hello'));
+    const handling = fake.getHandler()(message('hello'));
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(4_000);
+    agentResponse.reject(new Error('model unavailable'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fake.client.sendMessage).not.toHaveBeenCalled();
+
+    typingRefresh.resolve();
+    await handling;
 
     expect(fake.client.sendMessage).toHaveBeenCalledWith(
       42,
@@ -286,6 +385,8 @@ describe('DammieCryptoBot behavior', () => {
     expect(mocks.appendAssistantMessage).toHaveBeenCalledWith(expect.objectContaining({
       content: MESSAGES.ERROR,
     }));
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(fake.client.sendChatAction).toHaveBeenCalledTimes(2);
   });
 
   it('does not store an assistant response when Telegram delivery fails', async () => {
