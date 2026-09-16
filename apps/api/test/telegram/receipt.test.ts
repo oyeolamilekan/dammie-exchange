@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import sharp from 'sharp';
 import Logging from '../../src/library/logging.utils';
 import type { TelegramClient } from '../../src/services/telegram/client';
 import {
@@ -52,8 +53,10 @@ describe('transaction receipts', () => {
     expect(svg).toContain('TRANSACTION DETAILS');
     expect(svg).toContain('DATE');
     expect(svg).toContain('Thank you for choosing Dammie');
-    expect(svg).toContain('@font-face');
-    expect(svg).toContain('font-family: DammieReceipt');
+    expect(svg).toContain('role="img" aria-label="DAMMIE"');
+    expect(svg).not.toContain('<text');
+    expect(svg).not.toContain('@font-face');
+    expect(svg).not.toContain('font-family');
     expect(svg).toContain('#000000');
     expect(svg).toContain('#171717');
     expect(svg).toContain('#F5F5F5');
@@ -71,6 +74,14 @@ describe('transaction receipts', () => {
 
     const png = await renderSwapReceipt({ ...data, receivedAmount: '3000', grossAmount: '3050', executionPrice: '1220' });
     expect(Array.from(png.slice(0, 8))).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
+
+    const heroPixels = await sharp(png)
+      .extract({ left: 250, top: 230, width: 300, height: 125 })
+      .removeAlpha()
+      .greyscale()
+      .raw()
+      .toBuffer();
+    expect(Array.from(heroPixels).filter((pixel) => pixel > 220).length).toBeGreaterThan(300);
   });
 
   it('renders the portrait withdrawal hierarchy with masked account and references', async () => {

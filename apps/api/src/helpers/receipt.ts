@@ -9,16 +9,18 @@
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import opentype, { type Font, type Glyph } from 'opentype.js';
 import sharp from 'sharp';
 import { formatFinancialAmount } from '../utils/decimal';
 
 /**
- * Loads the bundled Latin font once so SVG text does not depend on fonts
- * installed by the production host. The cwd fallbacks support source runs,
- * compiled `dist` runs, and services started from the monorepo root.
+ * Loads the bundled font for converting every receipt label into SVG paths.
+ * Sharp uses librsvg, which does not reliably honour embedded `@font-face`
+ * rules, so keeping SVG `<text>` nodes would still depend on host fonts.
  */
-const loadReceiptFont = (): string => {
+const loadReceiptFont = (): Font => {
   const paths = [
+    resolve(__dirname, '../assets/NotoSans-Regular.ttf'),
     resolve(__dirname, '../../assets/NotoSans-Regular.ttf'),
     resolve(process.cwd(), 'apps/api/assets/NotoSans-Regular.ttf'),
     resolve(process.cwd(), 'assets/NotoSans-Regular.ttf'),
@@ -26,19 +28,23 @@ const loadReceiptFont = (): string => {
 
   for (const path of paths) {
     try {
-      return readFileSync(path).toString('base64');
+      const file = readFileSync(path);
+      const buffer = file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength);
+      return opentype.parse(buffer);
     } catch {
-      // Try the next deployment layout before falling back to system fonts.
+      // Try the next source or deployment layout.
     }
   }
 
-  return '';
+  throw new Error('Receipt font asset was not found');
 };
 
-const receiptFontData = loadReceiptFont();
-const receiptFontFace = receiptFontData
-  ? `@font-face { font-family: DammieReceipt; src: url(data:font/ttf;base64,${receiptFontData}) format("truetype"); }`
-  : '';
+let receiptFont: Font | undefined;
+
+const getReceiptFont = (): Font => {
+  receiptFont ??= loadReceiptFont();
+  return receiptFont;
+};
 
 /** Values displayed on a completed swap receipt. */
 export interface SwapReceiptData {
@@ -69,7 +75,7 @@ export interface WithdrawalReceiptData {
   completedAt: Date;
 }
 
-/** Escapes all dynamic values before inserting them into XML text nodes. */
+/** Escapes all dynamic values before inserting them into XML attributes. */
 export const escapeXml = (value: string | number): string => String(value)
   .replace(/&/g, '&amp;')
   .replace(/</g, '&lt;')
@@ -124,9 +130,98 @@ interface ReceiptLayout {
   completedAt: Date;
 }
 
+interface ReceiptTextStyle {
+  fill: string;
+  fontSize: number;
+  fontWeight: 400 | 500 | 700 | 800;
+  letterSpacing?: number;
+  anchor?: 'start' | 'middle' | 'end';
+}
+
+interface ReceiptGlyph {
+  glyph: Glyph;
+  isNaira: boolean;
+}
+
+const textStyles = {
+  brand: { fontSize: 28, fontWeight: 800, letterSpacing: 7, fill: '#171717', anchor: 'middle' },
+  title: { fontSize: 20, fontWeight: 700, letterSpacing: 3, fill: '#737373', anchor: 'middle' },
+  heroLabel: { fontSize: 17, fontWeight: 700, letterSpacing: 2, fill: '#E5E5E5', anchor: 'middle' },
+  heroAmount: { fontSize: 52, fontWeight: 800, fill: '#FFFFFF', anchor: 'middle' },
+  sectionLabel: { fontSize: 14, fontWeight: 800, letterSpacing: 2, fill: '#171717' },
+  summaryLabel: { fontSize: 18, fontWeight: 500, fill: '#737373' },
+  summaryValue: { fontSize: 21, fontWeight: 800, fill: '#171717', anchor: 'end' },
+  rowLabel: { fontSize: 17, fontWeight: 400, fill: '#737373' },
+  rowValue: { fontSize: 17, fontWeight: 700, fill: '#171717', anchor: 'end' },
+  footerTitle: { fontSize: 17, fontWeight: 700, fill: '#171717', anchor: 'middle' },
+  footerNote: { fontSize: 14, fontWeight: 400, fill: '#737373', anchor: 'middle' },
+} as const satisfies Record<string, ReceiptTextStyle>;
+
+const glyphForCharacter = (font: Font, character: string): ReceiptGlyph => {
+  if (character === '₦') {
+    return { glyph: font.charToGlyph('N'), isNaira: true };
+  }
+
+  const supportedCharacter = font.hasChar(character) ? character : '?';
+  return { glyph: font.charToGlyph(supportedCharacter), isNaira: false };
+};
+
+/**
+ * Converts text to vector outlines before Sharp sees the SVG. This makes the
+ * PNG independent of Fontconfig and of any fonts installed in its container.
+ */
+const outlinedText = (value: string, x: number, y: number, style: ReceiptTextStyle): string => {
+  const font = getReceiptFont();
+  const glyphs = Array.from(value, (character) => glyphForCharacter(font, character));
+  const scale = style.fontSize / font.unitsPerEm;
+  const letterSpacing = style.letterSpacing ?? 0;
+  const advance = (glyph: Glyph): number => (glyph.advanceWidth ?? font.unitsPerEm) * scale;
+
+  const textWidth = glyphs.reduce((width, item, index) => {
+    const next = glyphs[index + 1];
+    const kerning = next ? font.getKerningValue(item.glyph, next.glyph) * scale : 0;
+    return width + advance(item.glyph) + kerning + (next ? letterSpacing : 0);
+  }, 0);
+
+  let cursor = style.anchor === 'middle'
+    ? x - textWidth / 2
+    : style.anchor === 'end'
+      ? x - textWidth
+      : x;
+
+  const paths: string[] = [];
+  glyphs.forEach((item, index) => {
+    const pathData = item.glyph.getPath(cursor, y, style.fontSize).toPathData(2);
+    if (pathData) paths.push(`<path d="${pathData}" />`);
+
+    const glyphAdvance = advance(item.glyph);
+    if (item.isNaira) {
+      const startX = cursor + glyphAdvance * 0.06;
+      const endX = cursor + glyphAdvance * 0.94;
+      const upperY = y - style.fontSize * 0.48;
+      const lowerY = y - style.fontSize * 0.34;
+      const barWidth = Math.max(1.5, style.fontSize * 0.045);
+      paths.push(
+        `<path d="M${startX.toFixed(2)} ${upperY.toFixed(2)}H${endX.toFixed(2)} M${startX.toFixed(2)} ${lowerY.toFixed(2)}H${endX.toFixed(2)}" fill="none" stroke="${style.fill}" stroke-width="${barWidth.toFixed(2)}" />`,
+      );
+    }
+
+    const next = glyphs[index + 1];
+    cursor += glyphAdvance;
+    if (next) cursor += font.getKerningValue(item.glyph, next.glyph) * scale + letterSpacing;
+  });
+
+  const syntheticBold = style.fontWeight >= 800 ? 0.8 : style.fontWeight >= 700 ? 0.55 : style.fontWeight >= 500 ? 0.15 : 0;
+  const stroke = syntheticBold > 0
+    ? ` stroke="${style.fill}" stroke-width="${syntheticBold}" stroke-linejoin="round" paint-order="stroke fill"`
+    : '';
+
+  return `<g role="img" aria-label="${escapeXml(value)}" fill="${style.fill}"${stroke}>${paths.join('')}</g>`;
+};
+
 const receiptRow = (label: string, value: string, y: number, highlighted = false): string => `
-    <text x="96" y="${y}" class="${highlighted ? 'summary-label' : 'row-label'}">${escapeXml(label)}</text>
-    <text x="704" y="${y}" class="${highlighted ? 'summary-value' : 'row-value'}" text-anchor="end">${escapeXml(value)}</text>`;
+    ${outlinedText(label, 96, y, highlighted ? textStyles.summaryLabel : textStyles.rowLabel)}
+    ${outlinedText(value, 704, y, highlighted ? textStyles.summaryValue : textStyles.rowValue)}`;
 
 const sectionMarkup = (section: ReceiptSection, headingY: number): { markup: string; bottomY: number } => {
   const firstRowY = headingY + 50;
@@ -141,7 +236,7 @@ const sectionMarkup = (section: ReceiptSection, headingY: number): { markup: str
   if (section.highlighted) {
     return {
       markup: `
-    <text x="80" y="${headingY}" class="section-label">${escapeXml(section.label)}</text>
+    ${outlinedText(section.label, 80, headingY, textStyles.sectionLabel)}
     <rect x="80" y="${headingY + 20}" width="640" height="78" rx="16" fill="#F5F5F5" />
     ${rowsMarkup}`,
       bottomY: headingY + 98,
@@ -150,7 +245,7 @@ const sectionMarkup = (section: ReceiptSection, headingY: number): { markup: str
 
   return {
     markup: `
-    <text x="80" y="${headingY}" class="section-label">${escapeXml(section.label)}</text>
+    ${outlinedText(section.label, 80, headingY, textStyles.sectionLabel)}
     ${rowsMarkup}`,
     bottomY: firstRowY + (section.rows.length - 1) * 58 + 24,
   };
@@ -182,9 +277,9 @@ const receiptSvg = ({
   <rect width="800" height="${canvasHeight}" fill="#F5F5F5" />
   <rect x="32" y="32" width="736" height="${cardHeight}" rx="30" fill="#FFFFFF" stroke="#E5E5E5" stroke-width="2" />
 
-  <text x="400" y="100" class="brand" text-anchor="middle">DAMMIE</text>
+  ${outlinedText('DAMMIE', 400, 100, textStyles.brand)}
   <circle cx="400" cy="126" r="3" fill="#000000" />
-  <text x="400" y="166" class="title" text-anchor="middle">${escapeXml(title)}</text>
+  ${outlinedText(title, 400, 166, textStyles.title)}
 
   <rect x="72" y="202" width="656" height="198" rx="24" fill="#000000" />
   <g clip-path="url(#amount-panel-clip)" fill="none" stroke="#FFFFFF" opacity="0.10" stroke-width="3">
@@ -193,35 +288,22 @@ const receiptSvg = ({
     <path d="M590 213 L682 301 L590 389 L498 301 Z" />
     <circle cx="682" cy="301" r="176" />
   </g>
-  <text x="400" y="268" class="hero-label" text-anchor="middle">${escapeXml(heroLabel)}</text>
-  <text x="400" y="342" class="hero-amount" text-anchor="middle">${escapeXml(heroAmount)}</text>
+  ${outlinedText(heroLabel, 400, 268, textStyles.heroLabel)}
+  ${outlinedText(heroAmount, 400, 342, textStyles.heroAmount)}
   <rect x="360" y="368" width="80" height="4" rx="2" fill="#FFFFFF" opacity="0.55" />
 
   ${summarySection.markup}
   ${detailsSection.markup}
 
-  <text x="80" y="${dateHeadingY}" class="section-label">DATE</text>
+  ${outlinedText('DATE', 80, dateHeadingY, textStyles.sectionLabel)}
   ${receiptRow('Completed', displayDate(completedAt), dateRowY)}
   <line x1="80" y1="${dateRowY + 30}" x2="720" y2="${dateRowY + 30}" class="solid-rule" />
 
-  <text x="400" y="${footerY}" class="footer-title" text-anchor="middle">Thank you for choosing Dammie</text>
-  <text x="400" y="${footerY + 28}" class="footer-note" text-anchor="middle">Your transaction is complete.</text>
+  ${outlinedText('Thank you for choosing Dammie', 400, footerY, textStyles.footerTitle)}
+  ${outlinedText('Your transaction is complete.', 400, footerY + 28, textStyles.footerNote)}
   <style>
-    ${receiptFontFace}
-    text { font-family: DammieReceipt, Arial, Helvetica, sans-serif; }
-    .brand { font-size: 28px; font-weight: 800; letter-spacing: 7px; fill: #171717; }
-    .title { font-size: 20px; font-weight: 700; letter-spacing: 3px; fill: #737373; }
-    .hero-label { font-size: 17px; font-weight: 700; letter-spacing: 2px; fill: #E5E5E5; }
-    .hero-amount { font-size: 52px; font-weight: 800; fill: #FFFFFF; }
-    .section-label { font-size: 14px; font-weight: 800; letter-spacing: 2px; fill: #171717; }
-    .summary-label { font-size: 18px; font-weight: 500; fill: #737373; }
-    .summary-value { font-size: 21px; font-weight: 800; fill: #171717; }
-    .row-label { font-size: 17px; font-weight: 400; fill: #737373; }
-    .row-value { font-size: 17px; font-weight: 700; fill: #171717; }
     .dotted-rule { stroke: #D4D4D4; stroke-width: 2; stroke-dasharray: 2 9; stroke-linecap: round; }
     .solid-rule { stroke: #E5E5E5; stroke-width: 2; }
-    .footer-title { font-size: 17px; font-weight: 700; fill: #171717; }
-    .footer-note { font-size: 14px; font-weight: 400; fill: #737373; }
   </style>
 </svg>`;
 };
