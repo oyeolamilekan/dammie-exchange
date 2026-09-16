@@ -100,7 +100,7 @@ describe('admin session security', () => {
     expect(hashAdminSessionToken(token)).not.toContain(token);
   });
 
-  it('uses a 12-hour expiry and hardened cookie attributes', () => {
+  it('uses a 12-hour expiry and permits production cross-site API requests', () => {
     const start = new Date('2026-09-05T10:00:00Z');
     expect(adminSessionExpiry(start).getTime() - start.getTime()).toBe(12 * 60 * 60 * 1000);
     const original = CONFIG.NODE_ENV;
@@ -108,9 +108,14 @@ describe('admin session security', () => {
     expect(adminSessionCookieOptions()).toEqual(expect.objectContaining({
       httpOnly: true,
       secure: true,
-      sameSite: 'lax',
+      sameSite: 'none',
       path: '/api/v1/admin',
       maxAge: 12 * 60 * 60 * 1000,
+    }));
+    CONFIG.NODE_ENV = 'development';
+    expect(adminSessionCookieOptions()).toEqual(expect.objectContaining({
+      secure: false,
+      sameSite: 'lax',
     }));
     CONFIG.NODE_ENV = original;
   });

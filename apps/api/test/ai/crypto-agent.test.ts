@@ -6,6 +6,7 @@ import {
   normalizeToolOutput,
   runCryptoAgent,
 } from "../../src/agents/crypto.agent";
+import { MESSAGES } from '../../src/helpers/messages';
 import { catalogFixture } from '../fixtures/catalog';
 
 const usage = {
@@ -114,6 +115,53 @@ describe("AI SDK 7 crypto agent", () => {
     expect(removeBankAccount).toHaveBeenCalledWith({ userId: 42, username: 'dammie' });
     expect(output.action).toEqual({
       kind: 'web_app', name: 'REMOVE_BANK_ACCOUNT', param: 'user-123',
+    });
+  });
+
+  it('opens signup from trusted context with the exact welcome message', async () => {
+    const tools = createCryptoTools({
+      userId: 42,
+      username: 'dammie',
+      completeSignupId: 'signup-123',
+      isRegistered: false,
+    }, catalogFixture);
+
+    await expect(tools.completeSignUp.execute!({}, {} as never)).resolves.toEqual({
+      message: MESSAGES.WELCOME('dammie', catalogFixture),
+      action: {
+        kind: 'web_app',
+        name: 'COMPLETE_SIGNUP',
+        param: 'signup-123',
+      },
+      deterministic: true,
+    });
+  });
+
+  it('rejects signup state and identifiers supplied as model tool arguments', async () => {
+    const tools = createCryptoTools({
+      userId: 42,
+      username: 'dammie',
+      completeSignupId: 'trusted-signup',
+      isRegistered: false,
+    }, catalogFixture);
+
+    await expect(tools.completeSignUp.execute!({
+      completeSignupId: 'attacker-signup',
+      isRegistered: true,
+    }, {} as never)).rejects.toThrow();
+  });
+
+  it('guards signup server-side for registered users', async () => {
+    const tools = createCryptoTools({
+      userId: 42,
+      username: 'dammie',
+      completeSignupId: 'signup-123',
+      isRegistered: true,
+    }, catalogFixture);
+
+    await expect(tools.completeSignUp.execute!({}, {} as never)).resolves.toEqual({
+      message: MESSAGES.ALREADY_REGISTERED('dammie', catalogFixture),
+      deterministic: true,
     });
   });
 

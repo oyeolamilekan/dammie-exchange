@@ -128,7 +128,7 @@ cp apps/web/.env.example apps/web/.env
 
 Fill in the API secrets and database/Redis connection strings. Set the web
 `NEXT_PUBLIC_API_URL` to the API origin with the `/api/v1` prefix. For local
-development, the web example points to `http://127.0.0.1:3001/api/v1`.
+development, the web example points to `http://localhost:3001/api/v1`.
 
 Telegram delivers bot messages through the API webhook, so local bot testing
 also needs a public HTTPS tunnel to port `3001`. Put the machine-specific
@@ -248,6 +248,8 @@ For implementation details, endpoint contracts, security behavior, and
 financial lifecycle documentation, see the [API README](apps/api/README.md).
 For Mini App routes, proxy configuration, and admin UI behavior, see the [web
 README](apps/web/README.md).
+For a short explanation of the agentic-finance design—bounded memory, tool
+calling, and customer approval—see [Agentic Finance](docs/agentic-finance.md).
 
 ## License
 

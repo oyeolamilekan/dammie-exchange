@@ -38,6 +38,21 @@ ${renderCryptoExamples(supportedCryptos)}
 No wahala, I got you covered! 🇳🇬
   `,
 
+  /** Message shown when signup is requested for an existing customer. */
+  ALREADY_REGISTERED: (username: string, supportedCryptos: readonly SupportedCrypto[] = []) => `
+✅ *You're Already Registered!*
+
+Hello ${username}, your Dammie account is already set up and ready to trade crypto-to-Naira! 💰
+
+*Supported Cryptocurrencies:*
+${renderSupportedCryptoList(supportedCryptos)}
+
+You can ask me naturally, for example:
+${renderCryptoExamples(supportedCryptos)}
+
+No wahala, I got you covered! 🇳🇬
+  `,
+
   /**
    * @function HELP
    * @description Displays help information and usage instructions for the bot.

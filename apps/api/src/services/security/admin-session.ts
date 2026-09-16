@@ -23,13 +23,19 @@ export const adminSessionExpiry = (now = new Date()): Date =>
   new Date(now.getTime() + CONFIG.ADMIN_SESSION_HOURS * 60 * 60 * 1000);
 
 /** Returns secure cookie options for the administrator session. */
-export const adminSessionCookieOptions = (): CookieOptions => ({
-  httpOnly: true,
-  secure: CONFIG.NODE_ENV === 'production',
-  sameSite: 'lax',
-  path: '/api/v1/admin',
-  maxAge: CONFIG.ADMIN_SESSION_HOURS * 60 * 60 * 1000,
-});
+export const adminSessionCookieOptions = (): CookieOptions => {
+  const isProduction = CONFIG.NODE_ENV === 'production';
+
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    // The deployed web app and API may have different sites. Browsers omit a
+    // Lax cookie from those credentialed fetches even when CORS allows them.
+    sameSite: isProduction ? 'none' : 'lax',
+    path: '/api/v1/admin',
+    maxAge: CONFIG.ADMIN_SESSION_HOURS * 60 * 60 * 1000,
+  };
+};
 
 /** Reads and URI-decodes one named cookie from a raw Cookie header. */
 export const readCookie = (header: string | undefined, name: string): string | undefined => {

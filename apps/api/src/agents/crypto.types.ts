@@ -2,12 +2,16 @@
 export interface CryptoUserContext {
   userId: number;
   username: string;
+  /** Trusted signup intent identifier; never supplied by model tool arguments. */
+  completeSignupId: string;
+  /** Trusted registration state from the users table; never supplied by model tool arguments. */
+  isRegistered: boolean;
 }
 
 export type CryptoAction =
   | {
       kind: 'web_app';
-      name: 'ADD_BANK_ACCOUNT' | 'REMOVE_BANK_ACCOUNT' | 'APPROVE_SWAP_ACTION' | 'APPROVE_WITHDRAWAL_ACTION';
+      name: 'ADD_BANK_ACCOUNT' | 'REMOVE_BANK_ACCOUNT' | 'APPROVE_SWAP_ACTION' | 'APPROVE_WITHDRAWAL_ACTION' | 'COMPLETE_SIGNUP';
       param: string;
     }
   | {

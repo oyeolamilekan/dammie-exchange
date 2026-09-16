@@ -150,7 +150,10 @@ export class DammieCryptoBot {
         Logging.info(`Duplicate Telegram message ignored: ${message.message_id}`);
         return;
       }
-      conversation = { intentId: intent.id, turnId };
+      conversation = {
+        intentId: intent.id,
+        turnId,
+      };
 
       if (message.text.startsWith("/")) {
         await this.handleCommand(
@@ -168,6 +171,7 @@ export class DammieCryptoBot {
         userId,
         chatId,
         username,
+        intent.completeSignupId,
         conversation,
         {
           id: claimed.id,
@@ -211,7 +215,9 @@ export class DammieCryptoBot {
 
         await this.sendAssistantMessage(
           chatId,
-          MESSAGES.WELCOME(username, supportedCryptos),
+          user
+            ? MESSAGES.ALREADY_REGISTERED(username, supportedCryptos)
+            : MESSAGES.WELCOME(username, supportedCryptos),
           conversation,
           {
             parse_mode: "Markdown",
@@ -265,6 +271,7 @@ export class DammieCryptoBot {
     userId: number,
     chatId: number,
     username: string,
+    completeSignupId: string,
     conversation: ConversationTurn,
     claimedMessage: { id: string; createdAt: Date },
   ): Promise<void> {
@@ -286,13 +293,15 @@ export class DammieCryptoBot {
         userId,
         supportedCryptos,
         recentMessages,
-        isRegistered: Boolean(registeredUser?.firstName),
+        isRegistered: Boolean(registeredUser),
       });
       aiResponse = await runCryptoAgent({
         prompt: text,
         instructions: prompt,
         userId,
         username,
+        completeSignupId,
+        isRegistered: Boolean(registeredUser),
       }, { supportedCryptos });
     } finally {
       await progress.stop();
@@ -339,7 +348,12 @@ export class DammieCryptoBot {
 
     if (response.action?.kind === "web_app") {
       const actionConfig =
-        response.action.name === "ADD_BANK_ACCOUNT"
+        response.action.name === "COMPLETE_SIGNUP"
+          ? {
+              buttonText: "Complete Signup",
+              url: `${CONFIG.FRONTEND_URL}/auth/`,
+            }
+        : response.action.name === "ADD_BANK_ACCOUNT"
           ? {
               buttonText: "🏦 Add Bank Account",
               url: `${CONFIG.FRONTEND_URL}/bank/`,

@@ -100,7 +100,7 @@ export const processApprovedNgnWithdrawal = async (
       throw new Error('Existing NGN provider withdrawal requires reconciliation');
     }
     const created = await client.createWithdrawal('me', {
-      currency: 'NGN',
+      currency: 'ngn',
       amount: withdrawal.amount,
       fund_uid: withdrawal.accountNumber,
       fund_uid2: withdrawal.bankCode,

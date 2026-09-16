@@ -299,7 +299,7 @@ The important settings are:
 | `PIN_ATTEMPT_WINDOW_SECONDS`, `PIN_MAX_ATTEMPTS` | Failed-PIN lock policy |
 | `MAIN_ACCOUNT_ID` | Quidax owner account used for NGN payout operations |
 | `FRONTEND_URL` | Customer origin and Telegram Mini App link base |
-| `ADMIN_FRONTEND_URL` | Allowed admin browser origin; defaults based on environment |
+| `ADMIN_FRONTEND_URL` | Allowed admin browser origin; falls back to `FRONTEND_URL` |
 | `ADMIN_SESSION_HOURS` | Admin session duration; default `12` |
 | `ADMIN_LOGIN_WINDOW_SECONDS`, `ADMIN_LOGIN_MAX_ATTEMPTS` | Admin login rate-limit policy |
 

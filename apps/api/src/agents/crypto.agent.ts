@@ -75,14 +75,17 @@ const selectResponse = (
     outputs,
     (output) => Boolean(output.deterministic),
   );
+  const selectedOutput = deterministicOutput ?? actionOutput;
 
   return {
-    text: deterministicOutput?.message
-      || actionOutput?.message
+    text: selectedOutput?.message
       || generatedText.trim()
       || lastOutput?.message
       || '',
-    action: actionOutput?.action,
+    // Deterministic signup output owns its action so the welcome text and
+    // Mini App link can never be split across separate tool results. Keep
+    // the existing action fallback for deterministic tools without actions.
+    action: deterministicOutput?.action ?? actionOutput?.action,
   };
 };
 

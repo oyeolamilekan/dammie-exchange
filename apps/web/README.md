@@ -124,12 +124,14 @@ cp .env.example .env
 Recommended local values:
 
 ```dotenv
-NEXT_PUBLIC_API_URL=http://127.0.0.1:3001/api/v1
+NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
 ```
 
 When deploying the API separately, set `NEXT_PUBLIC_API_URL` to its reachable
 origin with the `/api/v1` prefix, and configure the API `FRONTEND_URL` and
-`ADMIN_FRONTEND_URL` to the web origin.
+`ADMIN_FRONTEND_URL` to the web origin. Production admin cookies use
+`SameSite=None; Secure` so credentialed requests continue to work when the web
+and API origins are on different sites.
 
 ## Local development
 

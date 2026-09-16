@@ -6,6 +6,7 @@ import type {
 import type { SupportedCrypto } from '../queries/catalog.query';
 import {
   addBankAccount,
+  completeSignUp,
   fetchWallet,
   getPortfolioSnapshot,
   getWalletAddress,
@@ -26,6 +27,7 @@ import type { CryptoToolOutput, CryptoUserContext } from './crypto.types';
 type CryptoDynamicTool = ReturnType<typeof dynamicTool>;
 
 type CryptoToolName =
+  | 'completeSignUp'
   | 'addBankAccount'
   | 'removeBankAccount'
   | 'fetchSwaps'
@@ -44,6 +46,7 @@ export type CryptoTools = Record<CryptoToolName, CryptoDynamicTool>;
 
 export interface CryptoAgentDependencies {
   addBankAccount: typeof addBankAccount;
+  completeSignUp: typeof completeSignUp;
   removeBankAccount: typeof removeBankAccount;
   fetchUserSwaps: typeof fetchUserSwaps;
   fetchUserDeposits: typeof fetchUserDeposits;
@@ -60,6 +63,7 @@ export interface CryptoAgentDependencies {
 
 const defaultDependencies: CryptoAgentDependencies = {
   addBankAccount,
+  completeSignUp,
   removeBankAccount,
   fetchUserSwaps,
   fetchUserDeposits,
@@ -133,6 +137,14 @@ export function createCryptoTools(
     schemas.transactionFilterSchema.parse(input) as Record<string, unknown>;
 
   return {
+    completeSignUp: dynamicTool({
+      description: 'Show the trusted signup welcome and open the signup Mini App when the user is not registered.',
+      inputSchema: schemas.emptyToolSchema,
+      execute: async (input) => {
+        schemas.emptyInputSchema.parse(input);
+        return dependencies.completeSignUp(context, catalog);
+      },
+    }),
     addBankAccount: dynamicTool({
       description: "Create the user's add-bank-account action.",
       inputSchema: schemas.emptyToolSchema,

@@ -12,6 +12,8 @@ apps/web/out/
 coverage/
 *.tsbuildinfo
 next-env.d.ts
+docs/
+slides/
 
 # Logs and local tooling
 logs/

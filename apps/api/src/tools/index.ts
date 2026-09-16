@@ -15,3 +15,4 @@ export { removeBankAccount } from './remove-bank-account';
 export { getPortfolioSnapshot } from './get-portfolio-snapshot';
 export { fetchAccountHistory } from './fetch-account-history';
 export { withdrawNgn } from './withdraw-ngn';
+export { completeSignUp } from './complete-sign-up';

@@ -97,6 +97,7 @@ describe('DammieCryptoBot behavior', () => {
     });
     mocks.appendAssistantMessage.mockResolvedValue({ id: 'assistant-id' });
     mocks.getRecentMessagesBefore.mockResolvedValue([]);
+    mocks.getUserByIntentId.mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -127,6 +128,31 @@ describe('DammieCryptoBot behavior', () => {
         },
       }),
     );
+  });
+
+  it('guards /start for registered users without invoking the agent or showing signup', async () => {
+    mocks.findOrCreateIntent.mockResolvedValue({
+      id: 'intent-id',
+      completeSignupId: 'complete-id',
+    });
+    mocks.getUserByIntentId.mockResolvedValue({ id: 'user-id' });
+    const fake = createClient();
+    createBot(fake.client);
+
+    await fake.getHandler()(message('/start'));
+
+    expect(fake.client.sendMessage).toHaveBeenCalledWith(
+      42,
+      MESSAGES.ALREADY_REGISTERED('ada', catalogFixture),
+      expect.objectContaining({
+        parse_mode: 'Markdown',
+        reply_markup: undefined,
+      }),
+    );
+    expect(mocks.runCryptoAgent).not.toHaveBeenCalled();
+    expect(mocks.appendAssistantMessage).toHaveBeenCalledWith(expect.objectContaining({
+      content: MESSAGES.ALREADY_REGISTERED('ada', catalogFixture),
+    }));
   });
 
   it('preserves help, unknown command, and non-text responses', async () => {
@@ -193,6 +219,30 @@ describe('DammieCryptoBot behavior', () => {
     });
     expect(vi.mocked(fake.client.sendChatAction).mock.invocationCallOrder[0])
       .toBeLessThan(mocks.getRecentMessagesBefore.mock.invocationCallOrder[0]);
+  });
+
+  it('renders the trusted complete-signup action as a Mini App button', async () => {
+    mocks.runCryptoAgent.mockResolvedValue({
+      text: MESSAGES.WELCOME('ada', catalogFixture),
+      action: { kind: 'web_app', name: 'COMPLETE_SIGNUP', param: 'signup-id' },
+    });
+    const fake = createClient();
+    createBot(fake.client);
+
+    await fake.getHandler()(message('I want to get started'));
+
+    expect(fake.client.sendMessage).toHaveBeenCalledWith(
+      42,
+      MESSAGES.WELCOME('ada', catalogFixture).trim(),
+      expect.objectContaining({
+        reply_markup: {
+          inline_keyboard: [[{
+            text: 'Complete Signup',
+            web_app: { url: expect.stringContaining('/auth/signup-id') },
+          }]],
+        },
+      }),
+    );
   });
 
   it('refreshes typing every four seconds and waits for an in-flight refresh before delivery', async () => {
@@ -297,6 +347,8 @@ describe('DammieCryptoBot behavior', () => {
     expect(mocks.runCryptoAgent).toHaveBeenCalledWith(expect.objectContaining({
       prompt: 'What did I say earlier?',
       instructions: 'system prompt',
+      completeSignupId: 'complete-id',
+      isRegistered: false,
     }), { supportedCryptos: catalogFixture });
   });
 

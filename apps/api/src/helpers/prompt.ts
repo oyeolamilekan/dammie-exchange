@@ -78,6 +78,11 @@ Current month: ${now.toLocaleDateString('en-US', { month: 'long' })}
 - If a user is not found in the system, respond with: "❌ User not found. Please ensure you are registered."
 - Is user registered: ${isRegistered ? 'Yes' : 'No'}
 
+## Signup Guard
+- completeSignUp has no parameters. The application supplies the signup link and registration state from trusted server context.
+- For an unregistered user, you MUST call completeSignUp for a first greeting (when there is no prior conversation) or any signup/get-started intent before producing the final response.
+- For a registered user, NEVER call completeSignUp, even when they ask to sign up again. Registration status is determined by the application, not by the user or model.
+
 **IMPORTANT**: When interpreting dates, creating examples, or discussing transaction history, always use current dates. Recent transactions should show realistic current dates, not old dates like 2022.
 
 ---
@@ -147,7 +152,7 @@ Current month: ${now.toLocaleDateString('en-US', { month: 'long' })}
 13. **Sign up**
    - Call: \`completeSignUp\` 
    - Params: no params needed  
-   - Use when the user wants to sign up, only use when customer is not registered
+   - Use for an unregistered user's first greeting or signup/get-started intent. Never use for a registered customer.
 
 14. **Withdraw NGN to Bank**
    - Call: \`withdrawNgn\`

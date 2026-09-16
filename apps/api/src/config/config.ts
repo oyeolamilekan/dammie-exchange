@@ -2,6 +2,10 @@ import dotenv from 'dotenv';
 
 dotenv.config({ quiet: true });
 
+const DEFAULT_FRONTEND_URL = 'http://localhost:3000';
+const FRONTEND_URL = process.env.FRONTEND_URL?.trim() || DEFAULT_FRONTEND_URL;
+const ADMIN_FRONTEND_URL = process.env.ADMIN_FRONTEND_URL?.trim() || FRONTEND_URL;
+
 // Configuration interface
 interface CONFIG {
   PORT: number;
@@ -34,11 +38,8 @@ interface CONFIG {
 
 
 const CONFIG = {
-  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
-  ADMIN_FRONTEND_URL: process.env.ADMIN_FRONTEND_URL
-    || (process.env.NODE_ENV === 'production'
-      ? process.env.FRONTEND_URL || 'http://localhost:3000'
-      : 'http://localhost:3000'),
+  FRONTEND_URL,
+  ADMIN_FRONTEND_URL,
   PORT: Number(process.env.PORT) || 3000,
   NODE_ENV: process.env.NODE_ENV || 'development',
   BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN!,
