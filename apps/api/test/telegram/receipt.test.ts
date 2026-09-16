@@ -52,6 +52,8 @@ describe('transaction receipts', () => {
     expect(svg).toContain('TRANSACTION DETAILS');
     expect(svg).toContain('DATE');
     expect(svg).toContain('Thank you for choosing Dammie');
+    expect(svg).toContain('@font-face');
+    expect(svg).toContain('font-family: DammieReceipt');
     expect(svg).toContain('#000000');
     expect(svg).toContain('#171717');
     expect(svg).toContain('#F5F5F5');

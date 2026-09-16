@@ -7,8 +7,38 @@
  * @module receiptHelper
  */
 
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import sharp from 'sharp';
 import { formatFinancialAmount } from '../utils/decimal';
+
+/**
+ * Loads the bundled Latin font once so SVG text does not depend on fonts
+ * installed by the production host. The cwd fallbacks support source runs,
+ * compiled `dist` runs, and services started from the monorepo root.
+ */
+const loadReceiptFont = (): string => {
+  const paths = [
+    resolve(__dirname, '../../assets/NotoSans-Regular.ttf'),
+    resolve(process.cwd(), 'apps/api/assets/NotoSans-Regular.ttf'),
+    resolve(process.cwd(), 'assets/NotoSans-Regular.ttf'),
+  ];
+
+  for (const path of paths) {
+    try {
+      return readFileSync(path).toString('base64');
+    } catch {
+      // Try the next deployment layout before falling back to system fonts.
+    }
+  }
+
+  return '';
+};
+
+const receiptFontData = loadReceiptFont();
+const receiptFontFace = receiptFontData
+  ? `@font-face { font-family: DammieReceipt; src: url(data:font/ttf;base64,${receiptFontData}) format("truetype"); }`
+  : '';
 
 /** Values displayed on a completed swap receipt. */
 export interface SwapReceiptData {
@@ -177,7 +207,8 @@ const receiptSvg = ({
   <text x="400" y="${footerY}" class="footer-title" text-anchor="middle">Thank you for choosing Dammie</text>
   <text x="400" y="${footerY + 28}" class="footer-note" text-anchor="middle">Your transaction is complete.</text>
   <style>
-    text { font-family: Arial, Helvetica, sans-serif; }
+    ${receiptFontFace}
+    text { font-family: DammieReceipt, Arial, Helvetica, sans-serif; }
     .brand { font-size: 28px; font-weight: 800; letter-spacing: 7px; fill: #171717; }
     .title { font-size: 20px; font-weight: 700; letter-spacing: 3px; fill: #737373; }
     .hero-label { font-size: 17px; font-weight: 700; letter-spacing: 2px; fill: #E5E5E5; }
