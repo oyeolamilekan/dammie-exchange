@@ -1,6 +1,8 @@
-// Keep admin requests same-origin and let Next.js proxy /api/v1 to the API.
-// This guarantees the version prefix and preserves credentialed cookies.
-const API_ROOT = "/api/v1/admin";
+import { BASE_URL } from "@/config/url";
+
+// Use the same configured API base as customer requests. Credentialed fetches
+// keep the HTTP-only admin session cookie available for a cross-origin API.
+const API_ROOT = `${BASE_URL}/admin`;
 
 export interface AdminIdentity {
   id: string;

@@ -54,7 +54,7 @@ Telegram Web App SDK
         |
         | WebApp.initData -> X-Telegram-Init-Data on requests
         v
-Axios client -> /api/v1 proxy -> Express API
+Axios client -> configured API base URL -> Express API
         |
         v
 React Query mutation -> toast -> close Mini App on success
@@ -96,10 +96,8 @@ user-facing message by `lib/utils.ts`.
 ## Admin request flow
 
 Admin calls use `lib/admin-api.ts`, not the customer Axios client. The helper
-always requests the same-origin path `/api/v1/admin`, includes credentials, and
-lets the Next.js rewrite forward the request to the API. This keeps the
-HTTP-only admin cookie available to the browser and avoids exposing an API
-origin directly in admin components.
+uses the same `NEXT_PUBLIC_API_URL` base as customer calls, appends `/admin`,
+and includes credentials so the HTTP-only admin cookie is sent with requests.
 
 The admin session boundary calls `/auth/me` before rendering protected routes.
 An unauthenticated response redirects to `/admin/login`; a successful login
@@ -121,19 +119,17 @@ cp .env.example .env
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `NEXT_PUBLIC_API_URL` | No | Browser-side API base URL; defaults to `/api/v1` for the same-origin proxy |
-| `API_URL` | When API is remote | Server-side Next.js rewrite destination; defaults to `http://127.0.0.1:3001` |
+| `NEXT_PUBLIC_API_URL` | Yes in production | Browser-side API base URL, including `/api/v1` |
 
 Recommended local values:
 
 ```dotenv
-NEXT_PUBLIC_API_URL=/api/v1
-API_URL=http://127.0.0.1:3001
+NEXT_PUBLIC_API_URL=http://127.0.0.1:3001/api/v1
 ```
 
-`next.config.ts` rewrites `/api/v1/:path*` to `${API_URL}/api/v1/:path*`.
-When deploying the API separately, set `API_URL` to its reachable origin and
-configure the API `FRONTEND_URL` and `ADMIN_FRONTEND_URL` to the web origin.
+When deploying the API separately, set `NEXT_PUBLIC_API_URL` to its reachable
+origin with the `/api/v1` prefix, and configure the API `FRONTEND_URL` and
+`ADMIN_FRONTEND_URL` to the web origin.
 
 ## Local development
 
@@ -196,9 +192,8 @@ providers. The admin layout adds the session boundary and admin theme.
 
 ## Production checklist
 
-- Set `NEXT_PUBLIC_API_URL=/api/v1` when using the same-origin proxy.
-- Set `API_URL` to the real API origin; do not leave the loopback default in a
-  separately hosted deployment.
+- Set `NEXT_PUBLIC_API_URL` to the real API origin plus `/api/v1`; do not leave
+  the local development value in a separately hosted deployment.
 - Ensure the API allows the web origin through `FRONTEND_URL` and
   `ADMIN_FRONTEND_URL`.
 - Serve the web and API over HTTPS so Telegram Mini App links and secure admin

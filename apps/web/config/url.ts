@@ -1,8 +1,16 @@
 /**
- * Keep browser requests on the same-origin API proxy by default.
- *
- * Environment files are intentionally not committed, so deployments that do
- * not override this value must still call `/api/v1` instead of resolving API
- * paths relative to the current page (for example `/bank/:slug/banks`).
+ * The API base URL used by every browser request, including the admin client.
+ * Keep the version prefix in the environment value so callers can append
+ * endpoint paths without separate proxy configuration.
  */
-export const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+const configuredBaseUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+const developmentFallback =
+  process.env.NODE_ENV === "development"
+    ? "http://127.0.0.1:3001/api/v1"
+    : undefined;
+
+if (!configuredBaseUrl && !developmentFallback) {
+  throw new Error("NEXT_PUBLIC_API_URL is required in production");
+}
+
+export const BASE_URL = (configuredBaseUrl || developmentFallback!).replace(/\/+$/, "");

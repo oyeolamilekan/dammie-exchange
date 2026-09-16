@@ -126,10 +126,9 @@ cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
 ```
 
-Fill in the API secrets and database/Redis connection strings. The web example
-uses `/api/v1`, which keeps browser requests same-origin and lets Next.js proxy
-them to the API. The rewrite target defaults to `http://127.0.0.1:3001`; set
-`apps/web/.env` `API_URL` when the API is hosted elsewhere.
+Fill in the API secrets and database/Redis connection strings. Set the web
+`NEXT_PUBLIC_API_URL` to the API origin with the `/api/v1` prefix. For local
+development, the web example points to `http://127.0.0.1:3001/api/v1`.
 
 Telegram delivers bot messages through the API webhook, so local bot testing
 also needs a public HTTPS tunnel to port `3001`. Put the machine-specific
@@ -233,8 +232,8 @@ bun run build
 ```
 
 Deploy `apps/web` as the Next.js application and `apps/api` as the Bun service.
-Set the web `API_URL` to the reachable API origin, and configure the API
-`FRONTEND_URL` and `ADMIN_FRONTEND_URL` to the actual browser origin(s). The
+Set the web `NEXT_PUBLIC_API_URL` to the reachable API origin with the `/api/v1`
+prefix, and configure the API `FRONTEND_URL` and `ADMIN_FRONTEND_URL` to the actual browser origin(s). The
 API process owns HTTP, Telegram webhook registration, and all Bull workers.
 Set `TELEGRAM_WEBHOOK_URL` to the public HTTPS API callback and use a long,
 random `TELEGRAM_WEBHOOK_SECRET` containing only letters, digits, `_`, or `-`.
