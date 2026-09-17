@@ -16,7 +16,7 @@ const TechStack = () => {
     <section className="py-20 bg-secondary">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="font-geometric hero-text text-3xl md:text-4xl text-black mb-4 uppercase">
+          <h2 className="font-display hero-text text-3xl md:text-4xl text-black mb-4 uppercase">
             Powered By
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -30,12 +30,12 @@ const TechStack = () => {
             <div className="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
               <Brain className="w-8 h-8 text-white" />
             </div>
-            <h3 className="font-geometric font-bold text-xl mb-6 uppercase">AI Stack</h3>
+            <h3 className="font-display font-bold text-xl mb-6 uppercase">AI Stack</h3>
             <div className="space-y-4 flex-1">
               {aiPartners.map((partner, index) => (
                 <div key={index} className="text-left">
                   <a href={partner.link}>
-                    <h4 className="font-geometric font-semibold text-lg">{partner.name}</h4>
+                    <h4 className="font-display font-semibold text-lg">{partner.name}</h4>
                     <p className="text-muted-foreground text-sm">{partner.description}</p>
                   </a>
                 </div>
@@ -48,12 +48,12 @@ const TechStack = () => {
             <div className="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
               <Coins className="w-8 h-8 text-white" />
             </div>
-            <h3 className="font-geometric font-bold text-xl mb-6 uppercase">Crypto Stack</h3>
+            <h3 className="font-display font-bold text-xl mb-6 uppercase">Crypto Stack</h3>
             <div className="space-y-4 flex-1">
               {cryptoPartners.map((partner, index) => (
                 <div key={index} className="text-left">
                   <a href={partner.link}>
-                    <h4 className="font-geometric font-semibold text-lg">{partner.name}</h4>
+                    <h4 className="font-display font-semibold text-lg">{partner.name}</h4>
                     <p className="text-muted-foreground text-sm">{partner.description}</p>
                   </a>
                 </div>
@@ -68,7 +68,7 @@ const TechStack = () => {
             href="https://github.com/oyeolamilekan/dammie-ai-frontend"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-black hover:text-muted-foreground transition-colors font-geometric font-semibold uppercase"
+            className="inline-flex items-center gap-2 text-black hover:text-muted-foreground transition-colors font-display font-semibold uppercase"
           >
             <Code className="w-5 h-5" />
             View Frontend Source Code
@@ -80,7 +80,7 @@ const TechStack = () => {
             href="https://github.com/oyeolamilekan/dammie-ai-backend"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-black hover:text-muted-foreground transition-colors font-geometric font-semibold uppercase"
+            className="inline-flex items-center gap-2 text-black hover:text-muted-foreground transition-colors font-display font-semibold uppercase"
           >
             <Code className="w-5 h-5" />
             View Backend Source Code

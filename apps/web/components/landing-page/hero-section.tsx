@@ -23,7 +23,7 @@ const HeroSection = () => {
       <div className="container mx-auto px-6 py-20 relative z-10">
         <div className="text-center max-w-4xl mx-auto">
           {/* Hero Text */}
-          <h1 className="font-geometric hero-text text-4xl md:text-6xl lg:text-7xl text-black mb-6 tracking-tight uppercase">
+          <h1 className="font-display hero-text text-4xl md:text-6xl lg:text-7xl text-black mb-6 tracking-tight uppercase">
             BUY & SELL
             <br />
             <span className="text-black">CRYPTO</span>
@@ -39,7 +39,7 @@ const HeroSection = () => {
           <div className="mb-16">
             <Button 
               size="lg" 
-              className="bg-black hover:bg-gray-800 text-white font-geometric font-bold text-lg px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
+              className="bg-black hover:bg-gray-800 text-white font-display font-bold text-lg px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
             >
               <Play className="mr-2 w-5 h-5" />
               WATCH DEMO
@@ -52,7 +52,7 @@ const HeroSection = () => {
               <div className="w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <MessageCircle className="w-8 h-8 text-black" />
               </div>
-              <h3 className="font-geometric font-bold text-lg mb-2 uppercase">CHAT TO TRADE</h3>
+              <h3 className="font-display font-bold text-lg mb-2 uppercase">CHAT TO TRADE</h3>
               <p className="text-muted-foreground text-sm">Send a message, get crypto. It&lsquo;s that simple.</p>
             </div>
             
@@ -60,7 +60,7 @@ const HeroSection = () => {
               <div className="w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Zap className="w-8 h-8 text-black" />
               </div>
-              <h3 className="font-geometric font-bold text-lg mb-2 uppercase">INSTANT</h3>
+              <h3 className="font-display font-bold text-lg mb-2 uppercase">INSTANT</h3>
               <p className="text-muted-foreground text-sm">Transactions completed in minutes, not hours.</p>
             </div>
             
@@ -68,7 +68,7 @@ const HeroSection = () => {
               <div className="w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Shield className="w-8 h-8 text-black" />
               </div>
-              <h3 className="font-geometric font-bold text-lg mb-2 uppercase">SECURE</h3>
+              <h3 className="font-display font-bold text-lg mb-2 uppercase">SECURE</h3>
               <p className="text-muted-foreground text-sm">Bank-level security for all your transactions.</p>
             </div>
           </div>

@@ -5,7 +5,7 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "build": "tsc && mkdir -p dist/assets && cp assets/NotoSans-Regular.ttf dist/assets/NotoSans-Regular.ttf",
+    "build": "tsc && mkdir -p dist/assets && cp assets/Inter.ttf assets/Geist.ttf assets/Ojuju.ttf dist/assets/",
     "start": "bun dist/server.js",
     "dev": "PORT=3001 bun --watch src/server.ts",
     "lint": "eslint 'src/**/*.ts' 'test/**/*.ts'",

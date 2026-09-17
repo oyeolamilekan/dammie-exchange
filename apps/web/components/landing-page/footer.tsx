@@ -8,7 +8,7 @@ const Footer = () => {
       <div className="container mx-auto px-6">
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <div className="text-center md:text-left">
-            <p className="font-geometric font-medium">
+            <p className="font-sans font-medium">
               Built by <span className="font-bold">Oye Olalekan Johnson</span>
             </p>
           </div>

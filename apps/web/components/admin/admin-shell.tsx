@@ -55,7 +55,7 @@ function AdminNavigation({ admin }: { admin: AdminIdentity }) {
               <Link href="/admin">
                 <AdminMark />
                 <span className="flex min-w-0 flex-col">
-                  <span className="truncate font-semibold">Dammie Ops</span>
+                  <span className="truncate font-heading text-base font-bold">Dammie Ops</span>
                   <span className="truncate text-xs text-sidebar-foreground/60">Control ledger</span>
                 </span>
               </Link>

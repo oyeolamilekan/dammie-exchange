@@ -14,16 +14,27 @@ import sharp from 'sharp';
 import { formatFinancialAmount } from '../utils/decimal';
 
 /**
- * Loads the bundled font for converting every receipt label into SVG paths.
+ * Loads the bundled Salary Index type system for converting receipt text into
+ * SVG paths. Inter is the shared body face, Geist carries display values, and
+ * Ojuju is reserved for the brand mark.
  * Sharp uses librsvg, which does not reliably honour embedded `@font-face`
  * rules, so keeping SVG `<text>` nodes would still depend on host fonts.
  */
-const loadReceiptFont = (): Font => {
+type ReceiptFontRole = 'sans' | 'display' | 'heading';
+
+const receiptFontFiles: Record<ReceiptFontRole, string> = {
+  sans: 'Inter.ttf',
+  display: 'Geist.ttf',
+  heading: 'Ojuju.ttf',
+};
+
+const loadReceiptFont = (role: ReceiptFontRole): Font => {
+  const fileName = receiptFontFiles[role];
   const paths = [
-    resolve(__dirname, '../assets/NotoSans-Regular.ttf'),
-    resolve(__dirname, '../../assets/NotoSans-Regular.ttf'),
-    resolve(process.cwd(), 'apps/api/assets/NotoSans-Regular.ttf'),
-    resolve(process.cwd(), 'assets/NotoSans-Regular.ttf'),
+    resolve(__dirname, `../assets/${fileName}`),
+    resolve(__dirname, `../../assets/${fileName}`),
+    resolve(process.cwd(), `apps/api/assets/${fileName}`),
+    resolve(process.cwd(), `assets/${fileName}`),
   ];
 
   for (const path of paths) {
@@ -36,14 +47,18 @@ const loadReceiptFont = (): Font => {
     }
   }
 
-  throw new Error('Receipt font asset was not found');
+  throw new Error(`Receipt ${role} font asset was not found`);
 };
 
-let receiptFont: Font | undefined;
+const receiptFonts = new Map<ReceiptFontRole, Font>();
 
-const getReceiptFont = (): Font => {
-  receiptFont ??= loadReceiptFont();
-  return receiptFont;
+const getReceiptFont = (role: ReceiptFontRole): Font => {
+  const cachedFont = receiptFonts.get(role);
+  if (cachedFont) return cachedFont;
+
+  const font = loadReceiptFont(role);
+  receiptFonts.set(role, font);
+  return font;
 };
 
 /** Values displayed on a completed swap receipt. */
@@ -132,6 +147,7 @@ interface ReceiptLayout {
 
 interface ReceiptTextStyle {
   fill: string;
+  fontRole: ReceiptFontRole;
   fontSize: number;
   fontWeight: 400 | 500 | 700 | 800;
   letterSpacing?: number;
@@ -144,17 +160,17 @@ interface ReceiptGlyph {
 }
 
 const textStyles = {
-  brand: { fontSize: 28, fontWeight: 800, letterSpacing: 7, fill: '#171717', anchor: 'middle' },
-  title: { fontSize: 20, fontWeight: 700, letterSpacing: 3, fill: '#737373', anchor: 'middle' },
-  heroLabel: { fontSize: 17, fontWeight: 700, letterSpacing: 2, fill: '#E5E5E5', anchor: 'middle' },
-  heroAmount: { fontSize: 52, fontWeight: 800, fill: '#FFFFFF', anchor: 'middle' },
-  sectionLabel: { fontSize: 14, fontWeight: 800, letterSpacing: 2, fill: '#171717' },
-  summaryLabel: { fontSize: 18, fontWeight: 500, fill: '#737373' },
-  summaryValue: { fontSize: 21, fontWeight: 800, fill: '#171717', anchor: 'end' },
-  rowLabel: { fontSize: 17, fontWeight: 400, fill: '#737373' },
-  rowValue: { fontSize: 17, fontWeight: 700, fill: '#171717', anchor: 'end' },
-  footerTitle: { fontSize: 17, fontWeight: 700, fill: '#171717', anchor: 'middle' },
-  footerNote: { fontSize: 14, fontWeight: 400, fill: '#737373', anchor: 'middle' },
+  brand: { fontRole: 'heading', fontSize: 30, fontWeight: 800, letterSpacing: 6, fill: '#171717', anchor: 'middle' },
+  title: { fontRole: 'display', fontSize: 20, fontWeight: 700, letterSpacing: 3, fill: '#737373', anchor: 'middle' },
+  heroLabel: { fontRole: 'sans', fontSize: 17, fontWeight: 700, letterSpacing: 2, fill: '#E5E5E5', anchor: 'middle' },
+  heroAmount: { fontRole: 'display', fontSize: 52, fontWeight: 800, fill: '#FFFFFF', anchor: 'middle' },
+  sectionLabel: { fontRole: 'display', fontSize: 14, fontWeight: 800, letterSpacing: 2, fill: '#171717' },
+  summaryLabel: { fontRole: 'sans', fontSize: 18, fontWeight: 500, fill: '#737373' },
+  summaryValue: { fontRole: 'display', fontSize: 21, fontWeight: 800, fill: '#171717', anchor: 'end' },
+  rowLabel: { fontRole: 'sans', fontSize: 17, fontWeight: 400, fill: '#737373' },
+  rowValue: { fontRole: 'sans', fontSize: 17, fontWeight: 700, fill: '#171717', anchor: 'end' },
+  footerTitle: { fontRole: 'display', fontSize: 17, fontWeight: 700, fill: '#171717', anchor: 'middle' },
+  footerNote: { fontRole: 'sans', fontSize: 14, fontWeight: 400, fill: '#737373', anchor: 'middle' },
 } as const satisfies Record<string, ReceiptTextStyle>;
 
 const glyphForCharacter = (font: Font, character: string): ReceiptGlyph => {
@@ -171,7 +187,7 @@ const glyphForCharacter = (font: Font, character: string): ReceiptGlyph => {
  * PNG independent of Fontconfig and of any fonts installed in its container.
  */
 const outlinedText = (value: string, x: number, y: number, style: ReceiptTextStyle): string => {
-  const font = getReceiptFont();
+  const font = getReceiptFont(style.fontRole);
   const glyphs = Array.from(value, (character) => glyphForCharacter(font, character));
   const scale = style.fontSize / font.unitsPerEm;
   const letterSpacing = style.letterSpacing ?? 0;
