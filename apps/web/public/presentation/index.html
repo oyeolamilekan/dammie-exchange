@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0d1524" />
+    <title>Dammie AI — Application Architecture</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="presentation" aria-label="Dammie AI application architecture presentation">
+      <div class="stage" id="stage">
+        <section class="slide cover-slide is-active" data-title="Introduction" aria-hidden="false">
+          <div class="cover-topline">
+            <div class="cover-brand">DAMMIE AI</div>
+            <div class="cover-meta">Architecture walkthrough <span>2026</span></div>
+          </div>
+          <div class="cover-copy">
+            <p class="cover-kicker">Telegram-first financial operations</p>
+            <h1>Application<br /><span>architecture</span></h1>
+            <p class="cover-summary">How identity, approvals, durable state, and workers turn a conversation into a verified outcome.</p>
+          </div>
+          <div class="cover-route" aria-hidden="true">
+            <div class="cover-route-line"></div>
+            <div class="cover-stop is-primary"><b>TG</b><span>Request</span></div>
+            <div class="cover-stop"><b>API</b><span>Validate</span></div>
+            <div class="cover-stop"><b>DB</b><span>Record</span></div>
+            <div class="cover-stop"><b>W</b><span>Settle</span></div>
+            <div class="cover-stop is-final"><b>✓</b><span>Reconcile</span></div>
+          </div>
+          <footer class="cover-footer"><span>Press → to begin</span><span>Dammie AI system walkthrough</span></footer>
+        </section>
+
+        <section class="slide" data-title="Overview" aria-hidden="true">
+          <header class="slide-header">
+            <div class="eyebrow"><span>01</span> Overview</div>
+            <div class="brand">DAMMIE AI</div>
+            <h1>How Dammie AI handles a request</h1>
+            <p>A Telegram-first financial assistant with a controlled path to money movement.</p>
+          </header>
+
+          <div class="flow flow-four overview-flow" aria-label="Request architecture overview">
+            <article class="node">
+              <div class="node-heading"><span class="node-icon">YOU</span><h2>Customer channels</h2></div>
+              <ul><li>Telegram chat</li><li>Mini App actions</li><li>Admin console</li></ul>
+              <div class="node-caption">Model plans</div>
+            </article>
+            <div class="connector" aria-hidden="true"></div>
+            <article class="node">
+              <div class="node-heading"><span class="node-icon">API</span><h2>Application core</h2></div>
+              <ul><li>Express API</li><li>AI tool execution</li><li>Auth and business rules</li></ul>
+              <div class="node-caption">API enforces</div>
+            </article>
+            <div class="connector" aria-hidden="true"></div>
+            <article class="node">
+              <div class="node-heading"><span class="node-icon">DB</span><h2>Durable state</h2></div>
+              <ul><li>PostgreSQL ledger</li><li>Drizzle queries</li><li>Redis and Bull queues</li></ul>
+              <div class="node-caption">Ledger records</div>
+            </article>
+            <div class="connector" aria-hidden="true"></div>
+            <article class="node">
+              <div class="node-heading"><span class="node-icon">Q</span><h2>Providers</h2></div>
+              <ul><li>Quidax</li><li>Telegram</li><li>Verified webhooks</li></ul>
+              <div class="node-caption">Workers reconcile</div>
+            </article>
+          </div>
+
+          <aside class="trust-rail">
+            <span>Guardrails</span>
+            <strong>Identity</strong><i></i><strong>Ownership</strong><i></i><strong>PIN approval</strong><i></i><strong>Idempotency</strong><i></i><strong>Reconciliation</strong>
+          </aside>
+          <footer><span>01</span><span>One controlled path from request to settlement</span></footer>
+        </section>
+
+        <section class="slide" data-title="Entry points" aria-hidden="true">
+          <header class="slide-header">
+            <div class="eyebrow"><span>02</span> Entry points</div>
+            <div class="brand">DAMMIE AI</div>
+            <h1>Three entry points, one API boundary</h1>
+            <p>Each channel serves a different user, but every state change follows the same rules.</p>
+          </header>
+
+          <div class="entry-grid">
+            <article class="node">
+              <div class="node-heading"><span class="node-icon">TG</span><h2>Telegram bot</h2></div>
+              <ul><li>Natural-language requests</li><li>Balances, deposits and swaps</li><li>Trusted action buttons</li></ul>
+              <div class="boundary-label">Secret-token webhook</div>
+            </article>
+            <article class="node">
+              <div class="node-heading"><span class="node-icon">WEB</span><h2>Next.js Mini App</h2></div>
+              <ul><li>Signup and bank forms</li><li>Review and PIN approval</li><li>Signed Telegram initData</li></ul>
+              <div class="boundary-label">Customer mutation boundary</div>
+            </article>
+            <article class="node">
+              <div class="node-heading"><span class="node-icon">OPS</span><h2>Admin console</h2></div>
+              <ul><li>Users and transactions</li><li>Catalog and platform fees</li><li>HTTP-only admin session</li></ul>
+              <div class="boundary-label">Operator boundary</div>
+            </article>
+          </div>
+          <div class="api-boundary" aria-label="Shared API boundary">
+            <div class="boundary-line"><i></i><i></i><i></i></div>
+            <strong>Express API <span>/api/v1</span></strong>
+            <small>Validation, ownership checks, policy enforcement, and durable state changes</small>
+          </div>
+          <footer><span>02</span><span>All channels share one trust boundary</span></footer>
+        </section>
+
+        <section class="slide" data-title="AI tool execution" aria-hidden="true">
+          <header class="slide-header">
+            <div class="eyebrow"><span>03</span> Intelligence</div>
+            <div class="brand">DAMMIE AI</div>
+            <h1>Bounded AI tool execution</h1>
+            <p>The model plans while trusted application services read data and create actions.</p>
+          </header>
+
+          <div class="flow flow-five compact-flow">
+            <article class="node"><div class="node-heading"><span class="node-icon">TG</span><h2>Message</h2></div><ul><li>“What is my BTC balance?”</li></ul></article>
+            <div class="connector"></div>
+            <article class="node"><div class="node-heading"><span class="node-icon">RT</span><h2>Runtime</h2></div><ul><li>Rate limit</li><li>Claim message</li><li>Authenticate user</li></ul></article>
+            <div class="connector"></div>
+            <article class="node"><div class="node-heading"><span class="node-icon">20</span><h2>Context</h2></div><ul><li>Latest 20 messages</li><li>Current catalog</li><li>History is untrusted</li></ul></article>
+            <div class="connector"></div>
+            <article class="node"><div class="node-heading"><span class="node-icon">AI</span><h2>Tool loop</h2></div><ul><li>Typed schemas</li><li>Maximum five steps</li><li>No model-owned IDs</li></ul></article>
+            <div class="connector"></div>
+            <article class="node"><div class="node-heading"><span class="node-icon">DB</span><h2>Live tools</h2></div><ul><li>Queries</li><li>Services</li><li>Provider adapter</li></ul></article>
+          </div>
+          <aside class="result-strip">
+            <span>Tool result</span>
+            <strong>Text reply</strong>
+            <em>or</em>
+            <strong>Trusted Mini App action</strong>
+            <small>The application creates the URL and keeps the user identity.</small>
+          </aside>
+          <footer><span>03</span><span>Conversation in, controlled action out</span></footer>
+        </section>
+
+        <section class="slide" data-title="Approval" aria-hidden="true">
+          <header class="slide-header">
+            <div class="eyebrow"><span>04</span> Approval</div>
+            <div class="brand">DAMMIE AI</div>
+            <h1>Approval before settlement</h1>
+            <p>Quotes and withdrawal requests record intent. A fresh approval authorizes settlement.</p>
+          </header>
+
+          <div class="flow flow-five approval-flow">
+            <article class="node step"><b>1</b><h2>Ask in chat</h2><ul><li>Sell 0.02 BTC</li><li>or withdraw ₦50k</li></ul></article><div class="connector"></div>
+            <article class="node step"><b>2</b><h2>Validate state</h2><ul><li>Balance, fee and limits</li><li>Provider quote</li><li>Create pending record</li></ul></article><div class="connector"></div>
+            <article class="node step"><b>3</b><h2>Review in Mini App</h2><ul><li>Exact amount</li><li>Fee and destination</li><li>Known transaction ID</li></ul></article><div class="connector"></div>
+            <article class="node step"><b>4</b><h2>Approve</h2><ul><li>Signed Telegram data</li><li>PIN and owner check</li><li>Attempt limits</li></ul></article><div class="connector"></div>
+            <article class="node step"><b>5</b><h2>Queue and settle</h2><ul><li>Lock funds</li><li>Provider call</li><li>Webhook and ledger</li></ul></article>
+          </div>
+          <aside class="trust-rail approval-rail">
+            <span>Approval gates</span>
+            <strong>Specific transaction</strong><i></i><strong>Authenticated owner</strong><i></i><strong>Fresh validation</strong><i></i><strong>Durable processing</strong>
+          </aside>
+          <footer><span>04</span><span>The customer makes the final decision</span></footer>
+        </section>
+
+        <section class="slide" data-title="API layers" aria-hidden="true">
+          <header class="slide-header">
+            <div class="eyebrow"><span>05</span> API</div>
+            <div class="brand">DAMMIE AI</div>
+            <h1>Application request path</h1>
+            <p>Thin routes pass validated requests into testable business workflows.</p>
+          </header>
+
+          <div class="layer-path">
+            <article><span>HTTP</span><h2>Express routes</h2><p>HTTP and webhooks</p></article>
+            <i></i><article><span>✓</span><h2>Middleware</h2><p>Auth, CORS and errors</p></article>
+            <i></i><article><span>CTL</span><h2>Controllers</h2><p>HTTP adapters</p></article>
+            <i></i><article><span>SVC</span><h2>Services</h2><p>Financial workflows</p></article>
+            <i></i><article><span>SQL</span><h2>Queries</h2><p>Drizzle</p></article>
+          </div>
+          <div class="api-foundation">
+            <article class="database"><span>PostgreSQL</span><small>ledger and history</small></article>
+            <div class="bidirectional">read / write</div>
+            <article class="node tool-node"><div class="node-heading"><span class="node-icon">AI</span><h2>AI tools enter here</h2></div><p>createSwap · withdrawNgn<br />getWalletBalance · fetchAccountHistory</p></article>
+            <div class="connector"></div>
+            <article class="node provider-node"><div class="node-heading"><span class="node-icon">Q</span><h2>Typed provider adapter</h2></div><p>Quidax calls and webhook verification<br />Normalized provider errors</p></article>
+          </div>
+          <footer><span>05</span><span>Routes are thin. Services own the rules</span></footer>
+        </section>
+
+        <section class="slide" data-title="Workers" aria-hidden="true">
+          <header class="slide-header">
+            <div class="eyebrow"><span>06</span> Workers</div>
+            <div class="brand">DAMMIE AI</div>
+            <h1>Webhook and worker processing</h1>
+            <p>The API records each provider event once, then retryable workers finish the job.</p>
+          </header>
+
+          <div class="worker-flow">
+            <article class="node"><div class="node-heading"><span class="node-icon">Q</span><h2>Quidax event</h2></div><ul><li>Deposit</li><li>Swap</li><li>Withdrawal</li></ul></article><div class="connector"></div>
+            <article class="node"><div class="node-heading"><span class="node-icon">✓</span><h2>Verify and persist</h2></div><ul><li>Signature check</li><li>provider_events</li><li>Duplicate safe</li></ul></article><div class="connector"></div>
+            <article class="node"><div class="node-heading"><span class="node-icon">R</span><h2>Redis and Bull</h2></div><ul><li>Queue by event type</li><li>Retry safely</li><li>Track jobs</li></ul></article><div class="connector"></div>
+            <article class="node worker-node"><div class="node-heading"><span class="node-icon">W</span><h2>Workers</h2></div><ul><li>Wallet provisioning</li><li>Deposit confirmation and credit</li><li>Swap or withdrawal recovery</li></ul></article>
+          </div>
+          <div class="worker-meta"><span>Retryable</span><span>Auditable</span><span>Idempotent</span></div>
+          <div class="ledger-drop"><i></i><article class="database"><span>Ledger state</span><small>account versions and transactions</small></article></div>
+          <footer><span>06</span><span>Events return. Workers make them durable</span></footer>
+        </section>
+
+        <section class="slide" data-title="State" aria-hidden="true">
+          <header class="slide-header">
+            <div class="eyebrow"><span>07</span> State</div>
+            <div class="brand">DAMMIE AI</div>
+            <h1>Application state</h1>
+            <p>The database and queues record what happened. Conversation history only provides context.</p>
+          </header>
+
+          <div class="state-layout">
+            <article class="node"><div class="node-heading"><span class="node-icon">OPS</span><h2>Admin console</h2></div><ul><li>Overview and recent activity</li><li>Users and transactions</li><li>Catalog and fees</li></ul></article>
+            <div class="connector"></div>
+            <article class="database state-db"><span>PostgreSQL</span><small>Users, intents, chat and wallets<br />Deposits, swaps and withdrawals<br />Provider events, fees and audit history</small></article>
+            <div class="connector"></div>
+            <article class="node"><div class="node-heading"><span class="node-icon">R</span><h2>Redis</h2></div><ul><li>Bull queues and workers</li><li>Rate limits and PIN attempts</li><li>Replay claims and sessions</li></ul></article>
+          </div>
+          <aside class="source-strip"><span>Source of truth</span><strong>Live balances, fees, ownership, approvals, provider events, and audit history come from application state.</strong></aside>
+          <footer><span>07</span><span>Memory is context. State is evidence</span></footer>
+        </section>
+
+        <section class="slide" data-title="End to end" aria-hidden="true">
+          <header class="slide-header">
+            <div class="eyebrow"><span>08</span> End to end</div>
+            <div class="brand">DAMMIE AI</div>
+            <h1>The complete architecture</h1>
+            <p>A request moves from customer intent to a verified, recorded outcome.</p>
+          </header>
+
+          <div class="architecture-map">
+            <div class="map-label">Customer surfaces</div>
+            <div class="surface-pills"><span>Telegram bot</span><span>Mini App</span><span>Admin console</span></div>
+            <div class="connector"></div>
+            <article class="node"><div class="node-heading"><span class="node-icon">API</span><h2>Express API</h2></div><p>Auth and routes<br />Controllers and services</p></article>
+            <div class="connector"></div>
+            <article class="node"><div class="node-heading"><span class="node-icon">AI</span><h2>AI and provider boundary</h2></div><p>Tool loop, services and Quidax<br />No direct model custody</p></article>
+          </div>
+          <div class="durable-label">Durable processing</div>
+          <div class="durable-map">
+            <article class="node"><div class="node-heading"><span class="node-icon">DB</span><h2>PostgreSQL</h2></div><p>Ledger and audit history</p></article><div class="connector"></div>
+            <article class="node"><div class="node-heading"><span class="node-icon">R</span><h2>Redis and Bull</h2></div><p>Queues and security controls</p></article><div class="connector"></div>
+            <article class="node"><div class="node-heading"><span class="node-icon">W</span><h2>Workers</h2></div><p>Provision, settle and recover</p></article><div class="connector"></div>
+            <article class="node quidax-node"><div class="node-heading"><span class="node-icon">Q</span><h2>Quidax</h2></div><p>Events</p></article>
+          </div>
+          <aside class="trust-rail architecture-rail">
+            <strong>Request</strong><i></i><strong>Live validation</strong><i></i><strong>Explicit approval</strong><i></i><strong>Worker settlement</strong><i></i><strong>Auditable state</strong>
+          </aside>
+          <footer><span>08</span><span>A controlled path, not a single model call</span></footer>
+        </section>
+      </div>
+
+      <nav class="controls" aria-label="Presentation controls">
+        <button id="previous" type="button" aria-label="Previous slide">←</button>
+        <div class="progress" aria-live="polite"><span id="currentSlide">1</span><i></i><span>9</span></div>
+        <button id="next" type="button" aria-label="Next slide">→</button>
+        <button id="fullscreen" class="fullscreen" type="button" aria-label="Enter fullscreen">⛶</button>
+      </nav>
+      <div class="keyboard-hint">Arrow keys to navigate · F for fullscreen</div>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>
